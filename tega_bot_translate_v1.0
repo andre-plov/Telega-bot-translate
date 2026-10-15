@@ -1,0 +1,112 @@
+from telebot import *
+from translate import Translator
+from PIL import Image
+import pytesseract
+import os
+
+Lang_out = 'en'
+
+bot = telebot.TeleBot('YOUR_TOKEN') # Enter your bot-token
+bot.delete_webhook()
+
+# logs = open('logs_users.txt', '')
+
+
+def translate_mes(text):  # core translator
+    global Lang_out
+    translator = Translator(from_lang='ru', to_lang=Lang_out)
+    translation = str(translator.translate(text))
+    return translation
+
+
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.send_message(message.chat.id,
+                     'Привет-привет👋\nЭто бот-переводчик, для вывода списка языков\n(по умолчанию это английский) используй комманду \n/lang\n\nДля озвучивания перевода используй комманду /voice и бот отправит аудио версию последнего переведённого сообщения')
+
+
+@bot.message_handler(commands=['lang'])
+def lang(message):
+    bot.send_message(message.chat.id,
+                     'Выбери язык из списка ниже👇\n   Английский - /en\n   Французский - /fr\n   Испанский - /es\n   Корейский - /ko\n   Арабский - /ar\n   Японский - /ja')
+
+
+@bot.message_handler(commands=['voice'])
+def voice(message):
+    bot.send_message(message.chat.id, 'Функция пока в разработке')
+    # voice01 = open("PATH_SAVE")
+    # bot.send_audio(message.chat.id, voice01)
+    # voice01.close()
+
+
+@bot.message_handler(commands=['en'])  # block for swap language and message about at
+def lang_english(message):
+    global Lang_out
+    Lang_out = 'en'
+    bot.send_message(message.chat.id, 'Язык успешно изменён на Английский 🇬🇧')
+
+
+@bot.message_handler(commands=['fr'])
+def lang_franch(message):
+    global Lang_out
+    Lang_out = 'fr'
+    bot.send_message(message.chat.id, 'Язык успешно изменён на Французский 🇫🇷')
+
+
+@bot.message_handler(commands=['es'])
+def lang_espan(message):
+    global Lang_out
+    Lang_out = 'es'
+    bot.send_message(message.chat.id, 'Язык успешно изменён на Испанский 🇪🇸')
+
+
+@bot.message_handler(commands=['ko'])
+def lang_korean(message):
+    global Lang_out
+    Lang_out = 'ko'
+    bot.send_message(message.chat.id, 'Язык успешно изменён на Корейский 🇰🇷')
+
+
+@bot.message_handler(commands=['ar'])
+def lang_arabic(message):
+    global Lang_out
+    Lang_out = 'ar'
+    bot.send_message(message.chat.id, 'Язык успешно изменён на Арабский 🇦🇪')
+
+
+@bot.message_handler(commands=['ja'])
+def lang_japan(message):
+    global Lang_out
+    Lang_out = 'ja'
+    bot.send_message(message.chat.id, 'Язык успешно изменён на Японсикй 🇯🇵')
+
+
+@bot.message_handler(func=lambda message: True)
+def handle_message(message):
+    bot.send_message(message.chat.id, translate_mes(message.text))
+    print(f'[{message.from_user.first_name}] - {message.text}')
+    # with open("C:/Users/andre/PycharmProjects/telega_bot v2.0/logs_users.txt", 'a') as file:
+    #     file.write(f'[{message.forward_date}|{message.from_user.first_name}] - {message.text}\n')
+
+@bot.message_handler(content_types=['photo'])
+def photo_translate(message):
+    bot.send_message(message.chat.id, 'В разработке')
+    photo_info = message.photo[-1]
+    file_id = photo_info.file_id
+    file_path = bot.get_file(file_id).file_path
+    downloaded_file = bot.download_file(file_path)
+    save_path = "C:/Users/andre/PycharmProjects/telega_bot v2.0/image"
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    file_name = f'{file_id}.png'
+    with open(os.path.join(save_path, file_name), 'wb') as new_file:
+        new_file.write(downloaded_file)
+    # bot.send_photo(message.chat.id, open(os.path.join(save_path, file_name), 'rb'))
+    print(pytesseract.image_to_string(Image.open(save_path + '/' + file_name), lang='rus'))
+    txt_orig = pytesseract.image_to_string(Image.open(save_path + '/' + file_name), lang='rus')
+    bot.send_message(message.chat_id, translate_mes(txt_orig))
+        # bot.send_message(translate_mes(pytesseract.image_to_string(image)))
+
+
+
+bot.polling(none_stop=True, interval=0)
